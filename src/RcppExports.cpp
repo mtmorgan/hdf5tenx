@@ -5,19 +5,22 @@
 
 using namespace Rcpp;
 
-// hello_world
-List hello_world();
-RcppExport SEXP _hdf5tenx_hello_world() {
+// tenx_margins
+List tenx_margins(CharacterVector r_fname, CharacterVector r_group, IntegerVector r_bufsize);
+RcppExport SEXP _hdf5tenx_tenx_margins(SEXP r_fnameSEXP, SEXP r_groupSEXP, SEXP r_bufsizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(hello_world());
+    Rcpp::traits::input_parameter< CharacterVector >::type r_fname(r_fnameSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type r_group(r_groupSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type r_bufsize(r_bufsizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(tenx_margins(r_fname, r_group, r_bufsize));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_hdf5tenx_hello_world", (DL_FUNC) &_hdf5tenx_hello_world, 0},
+    {"_hdf5tenx_tenx_margins", (DL_FUNC) &_hdf5tenx_tenx_margins, 3},
     {NULL, NULL, 0}
 };
 
