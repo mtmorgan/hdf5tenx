@@ -96,7 +96,8 @@ List tenx_margins(
             sumsq_i[i] += d2; sumsq_j[j] += d2;
         }
 
-        Rcpp::Rcout << j << " / " << dim[1] << std::endl;
+        Rcpp::Rcout << std::setprecision(3) << ((double) j) / dim[1] <<
+            std::endl;
         offset[0] += count[0];
         count[0] = std::min( count[0], indices_n - offset[0] );
     }
