@@ -1,5 +1,6 @@
 #include <string>
 #include <Rcpp.h>
+#include <progress.hpp>
 #include "c++/H5Cpp.h"
 
 using namespace Rcpp;
@@ -64,12 +65,13 @@ List tenx_margins(
     std::vector<int64_t> indices_v( Rcpp::as<int>(r_bufsize) );
     std::vector<int64_t> data_v( Rcpp::as<int>(r_bufsize) );
 
-    hsize_t i, j = -1, k = 0, l = 0;
+    int i, j = -1, l = 0;
     std::vector<int> n_i( dim[0] ), n_j( dim[1] );
     std::vector<double>
         sum_i( dim[0] ), sum_j( dim[1] ), sumsq_i( dim[0] ), sumsq_j( dim[1] );
     std::adjacent_difference(indptr.begin() + 1, indptr.end(), n_j.begin());
 
+    Progress progress( dim[1] );
     while ( count[0] > 0 ) {
         DataSpace memspace( rank, count );
 
@@ -83,7 +85,7 @@ List tenx_margins(
             &data_v[0], PredType::NATIVE_LONG, memspace, data_dataspace
             );
 
-        for (k = 0; k < count[0]; ++k) {
+        for (int k = 0; k < count[0]; ++k) {
             i = indices_v[k];
             if (offset[0] + k == indptr[l]) {
                 ++j;
@@ -96,8 +98,11 @@ List tenx_margins(
             sumsq_i[i] += d2; sumsq_j[j] += d2;
         }
 
-        Rcpp::Rcout << std::setprecision(3) << ((double) j) / dim[1] <<
-            std::endl;
+        if (progress.check_abort()) {
+            return List();
+        }
+        progress.update( j );
+
         offset[0] += count[0];
         count[0] = std::min( count[0], indices_n - offset[0] );
     }
