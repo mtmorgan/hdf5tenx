@@ -5,3 +5,7 @@ tenx_margins <- function(r_fname, r_group, r_bufsize) {
     .Call(`_hdf5tenx_tenx_margins`, r_fname, r_group, r_bufsize)
 }
 
+tenx_margins_slab <- function(r_fname, r_group, r_offset, r_count) {
+    .Call(`_hdf5tenx_tenx_margins_slab`, r_fname, r_group, r_offset, r_count)
+}
+

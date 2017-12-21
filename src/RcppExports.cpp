@@ -18,9 +18,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// tenx_margins_slab
+List tenx_margins_slab(CharacterVector r_fname, CharacterVector r_group, NumericVector r_offset, NumericVector r_count);
+RcppExport SEXP _hdf5tenx_tenx_margins_slab(SEXP r_fnameSEXP, SEXP r_groupSEXP, SEXP r_offsetSEXP, SEXP r_countSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< CharacterVector >::type r_fname(r_fnameSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type r_group(r_groupSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type r_offset(r_offsetSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type r_count(r_countSEXP);
+    rcpp_result_gen = Rcpp::wrap(tenx_margins_slab(r_fname, r_group, r_offset, r_count));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_hdf5tenx_tenx_margins", (DL_FUNC) &_hdf5tenx_tenx_margins, 3},
+    {"_hdf5tenx_tenx_margins_slab", (DL_FUNC) &_hdf5tenx_tenx_margins_slab, 4},
     {NULL, NULL, 0}
 };
 

@@ -3,8 +3,29 @@
 #include <progress.hpp>
 #include "c++/H5Cpp.h"
 
+#include "margin.h"
+
 using namespace Rcpp;
 using namespace H5;
+
+class slab {
+private:
+    DataSet dataset;
+    DataSpace dataspace;
+
+public:
+    slab(H5File& h5, H5std_string name) {
+        dataset = h5.openDataSet( name );
+        dataspace = dataset.getSpace();
+    }
+
+    void read(std::vector<int64_t>& data, hsize_t c_count, hsize_t c_offset) {
+        hsize_t count[] = { c_count }, start[] = { c_offset };
+        DataSpace memspace( 1, count );
+        dataspace.selectHyperslab( H5S_SELECT_SET, count, start );
+        dataset.read(&data[0], PredType::NATIVE_LONG, memspace, dataspace);
+    }
+};
 
 std::vector<int> tenx_dim(H5File h5, const H5std_string group)
 {
@@ -17,7 +38,7 @@ std::vector<int> tenx_dim(H5File h5, const H5std_string group)
     h5.openDataSet(barcodes).getSpace().getSimpleExtentDims( &h5dim[1], NULL);
 
     std::vector<int> result(2);
-    copy(h5dim.begin(), h5dim.end(), result.begin());
+    std::copy(h5dim.begin(), h5dim.end(), result.begin());
 
     return result;
 }
@@ -60,16 +81,13 @@ List tenx_margins(
         offset[] = { 0 },
         count[] = { Rcpp::as<int>(r_bufsize) };
     hsize_t indices_n;
-    indices.getSpace().getSimpleExtentDims( &indices_n, NULL );
+    indices_dataspace.getSimpleExtentDims( &indices_n, NULL );
 
     std::vector<int64_t> indices_v( Rcpp::as<int>(r_bufsize) );
     std::vector<int64_t> data_v( Rcpp::as<int>(r_bufsize) );
 
     int i, j = -1, l = 0;
-    std::vector<int> n_i( dim[0] ), n_j( dim[1] );
-    std::vector<double>
-        sum_i( dim[0] ), sum_j( dim[1] ), sumsq_i( dim[0] ), sumsq_j( dim[1] );
-    std::adjacent_difference(indptr.begin() + 1, indptr.end(), n_j.begin());
+    margin gene( dim[0] ), cell( dim[1] );
 
     Progress progress( dim[1] );
     while ( count[0] > 0 ) {
@@ -92,10 +110,8 @@ List tenx_margins(
                 ++l;
             }
 
-            const double d = data_v[k], d2 = d * d;
-            n_i[i] += 1;
-            sum_i[i] += d; sum_j[j] += d;
-            sumsq_i[i] += d2; sumsq_j[j] += d2;
+            gene.update(i, data_v[i]);
+            cell.update(j, data_v[j]);
         }
 
         if (progress.check_abort()) {
@@ -107,18 +123,47 @@ List tenx_margins(
         count[0] = std::min( count[0], indices_n - offset[0] );
     }
 
-    List result = List::create(
-        List::create(
-            IntegerVector(n_i.begin(), n_i.end()),
-            NumericVector(sum_i.begin(), sum_i.end()),
-            NumericVector(sumsq_i.begin(), sumsq_i.end())
-            ),
-        List::create(
-            IntegerVector(n_j.begin(), n_j.end()),
-            NumericVector(sum_j.begin(), sum_j.end()),
-            NumericVector(sumsq_j.begin(), sumsq_j.end())
-            )
-        );
+    return List::create( gene.as_list(), cell.as_list() );
+}
 
-    return result;
+// [[Rcpp::export]]
+List tenx_margins_slab(
+    CharacterVector r_fname, CharacterVector r_group,
+    NumericVector r_offset, NumericVector r_count
+    )
+{
+    const H5std_string
+        h5_name( Rcpp::as<std::string>(r_fname) ),
+        group_name( Rcpp::as<std::string>(r_group) ),
+        indptr_name( group_name + "/indptr" ),
+        indices_name( group_name + "/indices" ),
+        data_name( group_name + "/data" );
+
+    H5File h5( h5_name, H5F_ACC_RDONLY );
+    std::vector<int> dim = tenx_dim( h5, group_name );
+    std::vector<int64_t> indptr = tenx_indptr( h5, indptr_name );
+    const int
+        c_count = Rcpp::as<int>(r_count),
+        c_offset = Rcpp::as<int>(r_offset) - 1;
+
+    // indices + data
+    slab indices( h5, indices_name ), data( h5, data_name );
+    std::vector<int64_t> indices_v( c_count ), data_v( c_count );
+    indices.read( indices_v, c_count, indptr[c_offset] );
+    data.read( data_v, c_count, indptr[c_offset] );
+
+    // summarize
+    margin gene( dim[0] ), cell( dim[1] );
+    int l = c_offset, i, j = l - 1;
+    for (int k = 0; k < c_count; ++k) {
+        i = indices_v[k];
+        if (indptr[c_offset] + k == indptr[l]) {
+            ++j;
+            ++l;
+        }
+        gene.update(i, data_v[k]);
+        cell.update(j, data_v[k]);
+    }
+
+    return List::create(gene.as_list(), cell.as_list());
 }
