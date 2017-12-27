@@ -16,6 +16,7 @@
 }
 
 #' @useDynLib hdf5tenx, .registration = TRUE
+#' @importFrom Rcpp evalCpp
 .fun <- function(iter, ...)
     margins_slab(iter$fname, iter$group, iter$offset - 1L, iter$count)
 
