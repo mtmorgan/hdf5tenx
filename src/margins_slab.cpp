@@ -5,9 +5,6 @@
 #include "margin.h"
 #include "slab.h"
 
-using namespace Rcpp;
-using namespace H5;
-
 std::vector<int> tenx_dim(H5::H5File h5, const H5std_string group)
 {
     const H5std_string
@@ -24,40 +21,25 @@ std::vector<int> tenx_dim(H5::H5File h5, const H5std_string group)
     return result;
 }
 
-std::vector<int64_t> tenx_indptr(H5::H5File h5, const H5std_string indptr)
-{
-    hsize_t n;
-    H5::DataSet dataset = h5.openDataSet(indptr);
-    dataset.getSpace().getSimpleExtentDims(&n, NULL);
-    std::vector<int64_t> result(n);
-    dataset.read(&result[0], H5::PredType::NATIVE_LONG);
-    return result;
-}
-
 // [[Rcpp::export]]
-List margins_slab(
+Rcpp::List margins_slab(
     const std::string fname, const std::string group,
-    const int offset, const int count
+    const std::vector<double> indptr, const int offset, const int count
     )
 {
     const H5std_string
-        h5_name( fname ),
-        group_name( group ),
-        indptr_name( group_name + "/indptr" ),
-        indices_name( group_name + "/indices" ),
-        data_name( group_name + "/data" );
+        indices_name( group + "/indices" ),
+        data_name( group + "/data" );
 
-    H5File h5( h5_name, H5F_ACC_RDONLY );
-    std::vector<int> dim = tenx_dim( h5, group_name );
-    std::vector<int64_t> indptr = tenx_indptr( h5, indptr_name );
+    H5::H5File h5( fname, H5F_ACC_RDONLY );
 
     // indices + data
-    slab indices( h5, indices_name ), data( h5, data_name );
     std::vector<int64_t> indices_v( count ), data_v( count );
-    indices.read( indices_v, count, indptr[offset] );
-    data.read( data_v, count, indptr[offset] );
+    slab( h5, indices_name ).read( indices_v, count, indptr[offset] );
+    slab( h5, data_name ).read( data_v, count, indptr[offset] );
 
     // summarize
+    std::vector<int> dim = tenx_dim( h5, group );
     margin gene( dim[0] ), cell( dim[1] );
     int l = offset, i, j = l - 1;
     for (int k = 0; k < count; ++k) {
@@ -70,5 +52,5 @@ List margins_slab(
         cell.update(j, data_v[k]);
     }
 
-    return List::create(gene.as_list(), cell.as_list());
+    return Rcpp::List::create(gene.as_list(), cell.as_list());
 }

@@ -11,14 +11,19 @@
         if (i == n)
             return(NULL)
         i <<- i + 1L
-        list(fname = fname, group = group, offset=offset[i], count=count[i])
+        list(
+            fname = fname, group = group,
+            indptr = indptr, offset=offset[i], count=count[i]
+        )
     }
 }
 
 #' @useDynLib hdf5tenx, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 .fun <- function(iter, ...)
-    margins_slab(iter$fname, iter$group, iter$offset - 1L, iter$count)
+    margins_slab(
+        iter$fname, iter$group, iter$indptr, iter$offset - 1L, iter$count
+    )
 
 .reduce <- function(x, y)
     Map(Map, x, y, MoreArgs = list(f = `+`))

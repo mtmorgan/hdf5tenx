@@ -15,12 +15,6 @@ public:
         dataspace = dataset.getSpace();
     }
 
-    hsize_t length() {
-        hsize_t n;
-        dataspace.getSimpleExtentDims( &n, NULL );
-        return n;
-    }
-
     void read(
         std::vector<int64_t>& data, hsize_t c_count, hsize_t c_start
     ) {
@@ -30,10 +24,6 @@ public:
         dataset.read(&data[0], H5::PredType::NATIVE_LONG, memspace, dataspace);
     }
 
-    void close() {
-        dataspace.close();
-        dataset.close();
-    }
 };
 
 #endif
