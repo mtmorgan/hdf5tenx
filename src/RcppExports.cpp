@@ -5,37 +5,23 @@
 
 using namespace Rcpp;
 
-// tenx_margins
-List tenx_margins(CharacterVector r_fname, CharacterVector r_group, IntegerVector r_bufsize);
-RcppExport SEXP _hdf5tenx_tenx_margins(SEXP r_fnameSEXP, SEXP r_groupSEXP, SEXP r_bufsizeSEXP) {
+// margins_slab
+List margins_slab(const std::string fname, const std::string group, const int offset, const int count);
+RcppExport SEXP _hdf5tenx_margins_slab(SEXP fnameSEXP, SEXP groupSEXP, SEXP offsetSEXP, SEXP countSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< CharacterVector >::type r_fname(r_fnameSEXP);
-    Rcpp::traits::input_parameter< CharacterVector >::type r_group(r_groupSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type r_bufsize(r_bufsizeSEXP);
-    rcpp_result_gen = Rcpp::wrap(tenx_margins(r_fname, r_group, r_bufsize));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tenx_margins_slab
-List tenx_margins_slab(CharacterVector r_fname, CharacterVector r_group, NumericVector r_offset, NumericVector r_count);
-RcppExport SEXP _hdf5tenx_tenx_margins_slab(SEXP r_fnameSEXP, SEXP r_groupSEXP, SEXP r_offsetSEXP, SEXP r_countSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< CharacterVector >::type r_fname(r_fnameSEXP);
-    Rcpp::traits::input_parameter< CharacterVector >::type r_group(r_groupSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type r_offset(r_offsetSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type r_count(r_countSEXP);
-    rcpp_result_gen = Rcpp::wrap(tenx_margins_slab(r_fname, r_group, r_offset, r_count));
+    Rcpp::traits::input_parameter< const std::string >::type fname(fnameSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type group(groupSEXP);
+    Rcpp::traits::input_parameter< const int >::type offset(offsetSEXP);
+    Rcpp::traits::input_parameter< const int >::type count(countSEXP);
+    rcpp_result_gen = Rcpp::wrap(margins_slab(fname, group, offset, count));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_hdf5tenx_tenx_margins", (DL_FUNC) &_hdf5tenx_tenx_margins, 3},
-    {"_hdf5tenx_tenx_margins_slab", (DL_FUNC) &_hdf5tenx_tenx_margins_slab, 4},
+    {"_hdf5tenx_margins_slab", (DL_FUNC) &_hdf5tenx_margins_slab, 4},
     {NULL, NULL, 0}
 };
 
