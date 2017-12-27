@@ -1,5 +1,4 @@
 library(hdf5tenx)
-library(BiocParallel)
 
 fname <- "/home/mtmorgan/.ExperimentHub/1039"
 group <- "mm10"
