@@ -1,7 +1,5 @@
-#' @importFrom rhdf5 h5read
 .iterator <- function(fname, group, bufsize = 1e7, n = Inf) {
-    indname <- paste0(group, "/indptr")
-    indptr <- h5read(fname, indname, bit64conversion = "double")
+    indptr <- indptr(fname, group)
     indgrp <- floor(indptr / bufsize)
     offset <- match(unique(indgrp), indgrp)
     count <- as.integer(diff(indptr[c(offset, length(indptr))]))

@@ -22,6 +22,20 @@ std::vector<int> tenx_dim(H5::H5File h5, const H5std_string group)
 }
 
 // [[Rcpp::export]]
+Rcpp::NumericVector indptr( const std::string fname, const std::string group )
+{
+    H5::H5File h5( fname, H5F_ACC_RDONLY );
+    H5::DataSet dataset = h5.openDataSet( group + "/indptr" );
+    hsize_t n;
+    dataset.getSpace().getSimpleExtentDims(&n, NULL);
+    std::vector<int64_t> vec(n);
+    dataset.read(&vec[0], H5::PredType::NATIVE_LONG);
+    Rcpp::NumericVector result(n);
+    std::copy(vec.begin(), vec.end(), result.begin());
+    return result;
+}
+
+// [[Rcpp::export]]
 Rcpp::List margins_slab(
     const std::string fname, const std::string group,
     const std::vector<double> indptr, const int offset, const int count

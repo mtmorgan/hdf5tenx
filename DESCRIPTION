@@ -11,6 +11,6 @@ Description: One paragraph description of what the package does as one
         or more full sentences.
 License: Artistic-2.0
 Depends: BiocParallel
-Imports: Rcpp (>= 0.12.14), rhdf5
+Imports: Rcpp (>= 0.12.14)
 LinkingTo: Rhdf5lib, Rcpp
 RoxygenNote: 6.0.1

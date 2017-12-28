@@ -3,5 +3,4 @@
 export(margins)
 importFrom(BiocParallel,bpiterate)
 importFrom(Rcpp,evalCpp)
-importFrom(rhdf5,h5read)
 useDynLib(hdf5tenx, .registration = TRUE)

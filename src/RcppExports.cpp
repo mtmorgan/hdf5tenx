@@ -5,6 +5,18 @@
 
 using namespace Rcpp;
 
+// indptr
+Rcpp::NumericVector indptr(const std::string fname, const std::string group);
+RcppExport SEXP _hdf5tenx_indptr(SEXP fnameSEXP, SEXP groupSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string >::type fname(fnameSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type group(groupSEXP);
+    rcpp_result_gen = Rcpp::wrap(indptr(fname, group));
+    return rcpp_result_gen;
+END_RCPP
+}
 // margins_slab
 Rcpp::List margins_slab(const std::string fname, const std::string group, const std::vector<double> indptr, const int offset, const int count);
 RcppExport SEXP _hdf5tenx_margins_slab(SEXP fnameSEXP, SEXP groupSEXP, SEXP indptrSEXP, SEXP offsetSEXP, SEXP countSEXP) {
@@ -22,6 +34,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_hdf5tenx_indptr", (DL_FUNC) &_hdf5tenx_indptr, 2},
     {"_hdf5tenx_margins_slab", (DL_FUNC) &_hdf5tenx_margins_slab, 5},
     {NULL, NULL, 0}
 };
