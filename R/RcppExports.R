@@ -5,7 +5,11 @@ indptr <- function(fname, group) {
     .Call(`_hdf5tenx_indptr`, fname, group)
 }
 
-margins_slab <- function(fname, group, indptr, offset, count) {
-    .Call(`_hdf5tenx_margins_slab`, fname, group, indptr, offset, count)
+margins_dim <- function(fname, group) {
+    .Call(`_hdf5tenx_margins_dim`, fname, group)
+}
+
+margins_slab <- function(fname, group, indptr, begin, end) {
+    .Call(`_hdf5tenx_margins_slab`, fname, group, indptr, begin, end)
 }
 

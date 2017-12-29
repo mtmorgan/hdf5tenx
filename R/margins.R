@@ -1,9 +1,8 @@
 .iterator <- function(fname, group, bufsize = 1e7, n = Inf) {
     indptr <- indptr(fname, group)
     indgrp <- floor(indptr / bufsize)
-    offset <- match(unique(indgrp), indgrp)
-    count <- as.integer(diff(indptr[c(offset, length(indptr))]))
-    n <- min(n, length(count))
+    offset <- c(match(unique(indgrp), indgrp), length(indptr))
+    n <- min(n, length(offset) - 1L)
     i <- 0L
     function() {
         if (i == n)
@@ -11,7 +10,7 @@
         i <<- i + 1L
         list(
             fname = fname, group = group,
-            indptr = indptr, offset=offset[i], count=count[i]
+            indptr = indptr, begin = offset[i], end = offset[i + 1]
         )
     }
 }
@@ -20,11 +19,22 @@
 #' @importFrom Rcpp evalCpp
 .fun <- function(iter, ...)
     margins_slab(
-        iter$fname, iter$group, iter$indptr, iter$offset - 1L, iter$count
+        iter$fname, iter$group, iter$indptr, iter$begin - 1L, iter$end - 1L
     )
 
-.reduce <- function(x, y)
-    Map(Map, x, y, MoreArgs = list(f = `+`))
+.reduce <- function(x, y) {
+    ## trying to avoid copying
+    x$row$n <- x$row$n + y[[1]][[2]]
+    x$row$sum <- x$row$sum + y[[1]][[3]]
+    x$row$sumsq <- x$row$sumsq + y[[1]][[4]]
+
+    idx <- y[[2]][[1]] + seq_along(y[[2]][[2]])
+    x$column$n[idx] <- x$column$n[idx] + y[[2]][[2]]
+    x$column$sum[idx] <- x$column$sum[idx] + y[[2]][[3]]
+    x$column$sumsq[idx] <- x$column$sumsq[idx] + y[[2]][[4]]
+
+    x
+}
 
 #' Calculate row and column counts, sums, and sums-of-squares
 #'
@@ -53,6 +63,16 @@ margins <- function(fname, group, bufsize = 1e7, n = Inf) {
         is.numeric(bufsize), length(bufsize) == 1L, bufsize > 0,
         is.numeric(n), length(bufsize) == 1L, n > 0
     )
-
-    bpiterate(.iterator(fname, group, bufsize, n), .fun, REDUCE=.reduce)
+    dim <- margins_dim(fname, group)
+    init <- list(
+        row = list(
+            n = integer(dim[1]), sum = numeric(dim[1]), sumsq = numeric(dim[1])
+        ),
+        column = list(
+            n = integer(dim[2]), sum = numeric(dim[2]), sumsq = numeric(dim[2])
+        )
+    )
+    bpiterate(
+        .iterator(fname, group, bufsize, n), .fun, REDUCE=.reduce, init = init
+    )
 }
