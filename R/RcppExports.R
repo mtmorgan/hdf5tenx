@@ -9,11 +9,11 @@ margins_dim <- function(fname, group) {
     .Call(`_hdf5tenx_margins_dim`, fname, group)
 }
 
-margins_slab <- function(fname, group, indptr, begin, end) {
-    .Call(`_hdf5tenx_margins_slab`, fname, group, indptr, begin, end)
+margins_rle_slab <- function(fname, group, indptr, begin, end) {
+    .Call(`_hdf5tenx_margins_rle_slab`, fname, group, indptr, begin, end)
 }
 
-margins_matrix <- function(fname, group, nrow, begin, end) {
-    .Call(`_hdf5tenx_margins_matrix`, fname, group, nrow, begin, end)
+margins_dense_slab <- function(fname, group, nrow, begin, end) {
+    .Call(`_hdf5tenx_margins_dense_slab`, fname, group, nrow, begin, end)
 }
 

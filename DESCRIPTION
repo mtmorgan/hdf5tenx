@@ -1,14 +1,14 @@
 Package: hdf5tenx
 Type: Package
 Title: Process 10xGenomics HDF5 Files
-Version: 0.0.1
-Date: 2017-12-16
+Version: 0.0.2
 Authors@R: person(
     "Martin", "Morgan",
     email = "Martin.Morgan@RoswellPark.org",
     role = c("aut", "cre"))
-Description: One paragraph description of what the package does as one
-        or more full sentences.
+Description: Calculate row and column non-zero counts, sums, and
+    sums-of-squares from run-length encoded or rectangular (dense)
+    HDF5 representations of 10x Genomics data.
 License: Artistic-2.0
 Depends: BiocParallel
 Imports: Rcpp (>= 0.12.14)

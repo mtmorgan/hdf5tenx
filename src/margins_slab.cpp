@@ -69,7 +69,7 @@ Rcpp::List as_list(const int begin, const margin gene, const margin cell)
 }
 
 // [[Rcpp::export]]
-Rcpp::List margins_slab(
+Rcpp::List margins_rle_slab(
     const std::string fname, const std::string group,
     const std::vector<double> indptr, const int begin, const int end
     )
@@ -105,7 +105,7 @@ Rcpp::List margins_slab(
 }
 
 // [[Rcpp::export]]
-Rcpp::List margins_matrix(
+Rcpp::List margins_dense_slab(
     const std::string fname, const std::string group,
     const int nrow, const int begin, const int end
     )
