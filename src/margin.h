@@ -8,13 +8,12 @@ class margin {
 
 public:
 
-    int offset;
     std::vector<int> n;
     std::vector<double> sum, sumsq;
 
-  margin( int offset, hsize_t n ) : offset(offset), n(n), sum(n), sumsq(n) {};
+  margin( const hsize_t n ) : n(n), sum(n), sumsq(n) {};
 
-    inline void update(int i, double d) {
+    inline void update( const int i, const double d ) {
         if (d == 0)
             return;
         n[i] += 1;
@@ -22,14 +21,11 @@ public:
         sumsq[i] += d * d;
     }
 
-    Rcpp::List as_list() {
-        Rcpp::IntegerVector r_offset(1);
-        r_offset[0] = offset;
+    Rcpp::List as_list() const {
         return Rcpp::List::create(
-            r_offset,
-            Rcpp::IntegerVector(n.begin(), n.end()),
-            Rcpp::NumericVector(sum.begin(), sum.end()),
-            Rcpp::NumericVector(sumsq.begin(), sumsq.end())
+            Rcpp::_["n"] = Rcpp::IntegerVector(n.begin(), n.end()),
+            Rcpp::_["sum"] = Rcpp::NumericVector(sum.begin(), sum.end()),
+            Rcpp::_["sumsq"] = Rcpp::NumericVector(sumsq.begin(), sumsq.end())
             );
     }
 

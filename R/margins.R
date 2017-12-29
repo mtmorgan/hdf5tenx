@@ -17,22 +17,30 @@
 
 #' @useDynLib hdf5tenx, .registration = TRUE
 #' @importFrom Rcpp evalCpp
-.fun <- function(iter, ...)
+.fun <- function(iter, ...) {
     margins_slab(
         iter$fname, iter$group, iter$indptr, iter$begin - 1L, iter$end - 1L
     )
+}
 
 .reduce <- function(x, y) {
-    ## trying to avoid copying
-    x$row$n <- x$row$n + y[[1]][[2]]
-    x$row$sum <- x$row$sum + y[[1]][[3]]
-    x$row$sumsq <- x$row$sumsq + y[[1]][[4]]
+    x$row$n <- x$row$n + y$row$n
+    x$row$sum <- x$row$sum + y$row$sum
+    x$row$sumsq <- x$row$sumsq + y$row$sumsq
 
-    idx <- y[[2]][[1]] + seq_along(y[[2]][[2]])
-    x$column$n[idx] <- x$column$n[idx] + y[[2]][[2]]
-    x$column$sum[idx] <- x$column$sum[idx] + y[[2]][[3]]
-    x$column$sumsq[idx] <- x$column$sumsq[idx] + y[[2]][[4]]
+    for (nm in names(y$column))
+        x$column[[nm]] <- y$column[[nm]]
 
+    x
+}
+
+.final <- function(x) {
+    id <- names(x$column)[ order(as.integer(names(x$column))) ]
+    x$column <- list(
+        n = do.call(c, unname(eapply(x$column, `[[`, "n")[id])),
+        sum = do.call(c, unname(eapply(x$column, `[[`, "sum")[id])),
+        sumsq = do.call(c, unname(eapply(x$column, `[[`, "sumsq")[id]))
+    )
     x
 }
 
@@ -63,17 +71,10 @@ margins <- function(fname, group, bufsize = 1e7, n = Inf) {
         is.numeric(bufsize), length(bufsize) == 1L, bufsize > 0,
         is.numeric(n), length(bufsize) == 1L, n > 0
     )
-    nrow <- margins_dim(fname, paste0(group, "/genes"))
-    ncol <- margins_dim(fname, paste0(group, "/barcodes"))
-    init <- list(
-        row = list(
-            n = integer(nrow), sum = numeric(nrow), sumsq = numeric(nrow)
-        ),
-        column = list(
-            n = integer(ncol), sum = numeric(ncol), sumsq = numeric(ncol)
-        )
+
+    res <- bpiterate(
+        .iterator(fname, group, bufsize, n), .fun, REDUCE=.reduce
     )
-    bpiterate(
-        .iterator(fname, group, bufsize, n), .fun, REDUCE=.reduce, init = init
-    )
+
+    .final(res)
 }

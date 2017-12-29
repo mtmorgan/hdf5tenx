@@ -56,6 +56,18 @@ void slab_read(
     dataset.read( &data[0], H5::PredType::NATIVE_LONG, memspace, dataspace );
 }
 
+Rcpp::List as_list(const int begin, const margin gene, const margin cell)
+{
+    Rcpp::Environment env = Rcpp::new_env();
+    char id[20];
+    std::sprintf(id, "%d", begin);
+    env[ id ] = cell.as_list();
+    return Rcpp::List::create(
+        Rcpp::_["row"] = gene.as_list(),
+        Rcpp::_["column"] = env
+        );
+}
+
 // [[Rcpp::export]]
 Rcpp::List margins_slab(
     const std::string fname, const std::string group,
@@ -79,7 +91,7 @@ Rcpp::List margins_slab(
 
     // summarize
     const std::vector<hsize_t> dim = get_dim( h5, group + "/genes" );
-    margin gene( 0, dim[0] ), cell( begin, end - begin );
+    margin gene( dim[0] ), cell( end - begin );
     int i, j = 0;
     for (int k = 0; k < count[0]; ++k) {
         i = indices[k];
@@ -89,7 +101,7 @@ Rcpp::List margins_slab(
         cell.update(j, data[k]);
     }
 
-    return Rcpp::List::create(gene.as_list(), cell.as_list());
+    return as_list( begin, gene, cell );
 }
 
 // [[Rcpp::export]]
@@ -102,10 +114,10 @@ Rcpp::List margins_matrix(
     H5::H5File h5( fname, H5F_ACC_RDONLY );
     // transposed!
     hsize_t rank = 2, count[] = { ncol, nrow }, start[] = { begin, 0 };
-    std::vector<int64_t> data ( nrow * ncol );
+    std::vector<int64_t> data( nrow * ncol );
     slab_read(data, h5, group, rank, count, start);
 
-    margin gene(0, nrow), cell( begin, end - begin );
+    margin gene( nrow ), cell( end - begin );
     for (int i = 0; i < nrow; ++i) {
         for (int  j = 0; j < ncol; ++j) {
             const double d = data[j * nrow + i];
@@ -113,5 +125,6 @@ Rcpp::List margins_matrix(
             cell.update(j, d);
         }
     }
-    return Rcpp::List::create(gene.as_list(), cell.as_list());
+
+    return as_list( begin, gene, cell );
 }
