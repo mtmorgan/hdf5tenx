@@ -13,3 +13,7 @@ margins_slab <- function(fname, group, indptr, begin, end) {
     .Call(`_hdf5tenx_margins_slab`, fname, group, indptr, begin, end)
 }
 
+margins_matrix <- function(fname, group, nrow, begin, end) {
+    .Call(`_hdf5tenx_margins_matrix`, fname, group, nrow, begin, end)
+}
+

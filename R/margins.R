@@ -63,13 +63,14 @@ margins <- function(fname, group, bufsize = 1e7, n = Inf) {
         is.numeric(bufsize), length(bufsize) == 1L, bufsize > 0,
         is.numeric(n), length(bufsize) == 1L, n > 0
     )
-    dim <- margins_dim(fname, group)
+    nrow <- margins_dim(fname, paste0(group, "/genes"))
+    ncol <- margins_dim(fname, paste0(group, "/barcodes"))
     init <- list(
         row = list(
-            n = integer(dim[1]), sum = numeric(dim[1]), sumsq = numeric(dim[1])
+            n = integer(nrow), sum = numeric(nrow), sumsq = numeric(nrow)
         ),
         column = list(
-            n = integer(dim[2]), sum = numeric(dim[2]), sumsq = numeric(dim[2])
+            n = integer(ncol), sum = numeric(ncol), sumsq = numeric(ncol)
         )
     )
     bpiterate(

@@ -12,9 +12,11 @@ public:
     std::vector<int> n;
     std::vector<double> sum, sumsq;
 
-  margin( int offset, hsize_t n) : offset(offset), n(n), sum(n), sumsq(n) {};
+  margin( int offset, hsize_t n ) : offset(offset), n(n), sum(n), sumsq(n) {};
 
     inline void update(int i, double d) {
+        if (d == 0)
+            return;
         n[i] += 1;
         sum[i] += d;
         sumsq[i] += d * d;

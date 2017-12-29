@@ -44,11 +44,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// margins_matrix
+Rcpp::List margins_matrix(const std::string fname, const std::string group, const int nrow, const int begin, const int end);
+RcppExport SEXP _hdf5tenx_margins_matrix(SEXP fnameSEXP, SEXP groupSEXP, SEXP nrowSEXP, SEXP beginSEXP, SEXP endSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string >::type fname(fnameSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type group(groupSEXP);
+    Rcpp::traits::input_parameter< const int >::type nrow(nrowSEXP);
+    Rcpp::traits::input_parameter< const int >::type begin(beginSEXP);
+    Rcpp::traits::input_parameter< const int >::type end(endSEXP);
+    rcpp_result_gen = Rcpp::wrap(margins_matrix(fname, group, nrow, begin, end));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_hdf5tenx_indptr", (DL_FUNC) &_hdf5tenx_indptr, 2},
     {"_hdf5tenx_margins_dim", (DL_FUNC) &_hdf5tenx_margins_dim, 2},
     {"_hdf5tenx_margins_slab", (DL_FUNC) &_hdf5tenx_margins_slab, 5},
+    {"_hdf5tenx_margins_matrix", (DL_FUNC) &_hdf5tenx_margins_matrix, 5},
     {NULL, NULL, 0}
 };
 

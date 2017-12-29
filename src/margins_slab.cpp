@@ -21,18 +21,13 @@ Rcpp::NumericVector indptr( const std::string fname, const std::string group )
     return result;
 }
 
-std::vector<hsize_t> margins_dim_internal(
-    H5::H5File h5, const H5std_string group
-    )
+std::vector<hsize_t> get_dim( H5::H5File h5, const H5std_string group )
 {
-    const H5std_string
-        barcodes( group + "/barcodes"),
-        genes( group + "/genes");
-    std::vector<hsize_t> dim(2);
-
-    h5.openDataSet(genes).getSpace().getSimpleExtentDims( &dim[0], NULL);
-    h5.openDataSet(barcodes).getSpace().getSimpleExtentDims( &dim[1], NULL);
-
+    H5::DataSet dataset = h5.openDataSet( group );
+    H5::DataSpace dataspace = dataset.getSpace();
+    const int rank = dataspace.getSimpleExtentNdims();
+    std::vector<hsize_t> dim( rank );
+    dataspace.getSimpleExtentDims( &dim[0], NULL );
     return dim;
 }
 
@@ -40,10 +35,11 @@ std::vector<hsize_t> margins_dim_internal(
 Rcpp::IntegerVector margins_dim( std::string fname, std::string group )
 {
     H5::H5File h5( fname, H5F_ACC_RDONLY );
-    std::vector<hsize_t> dim = margins_dim_internal( h5, group );
+    std::vector<hsize_t> dim = get_dim( h5, group );
 
     Rcpp::IntegerVector result( dim.size() );
-    std::copy( dim.begin(), dim.end(), result.begin() );
+    std::reverse_copy( dim.begin(), dim.end(), result.begin() );
+
     return result;
 }
 
@@ -82,7 +78,7 @@ Rcpp::List margins_slab(
     slab_read( data, h5, data_name, rank, count,  start );
 
     // summarize
-    const std::vector<hsize_t> dim = margins_dim_internal( h5, group );
+    const std::vector<hsize_t> dim = get_dim( h5, group + "/genes" );
     margin gene( 0, dim[0] ), cell( begin, end - begin );
     int i, j = 0;
     for (int k = 0; k < count[0]; ++k) {
@@ -93,5 +89,29 @@ Rcpp::List margins_slab(
         cell.update(j, data[k]);
     }
 
+    return Rcpp::List::create(gene.as_list(), cell.as_list());
+}
+
+// [[Rcpp::export]]
+Rcpp::List margins_matrix(
+    const std::string fname, const std::string group,
+    const int nrow, const int begin, const int end
+    )
+{
+    const int ncol = end - begin;
+    H5::H5File h5( fname, H5F_ACC_RDONLY );
+    // transposed!
+    hsize_t rank = 2, count[] = { ncol, nrow }, start[] = { begin, 0 };
+    std::vector<int64_t> data ( nrow * ncol );
+    slab_read(data, h5, group, rank, count, start);
+
+    margin gene(0, nrow), cell( begin, end - begin );
+    for (int i = 0; i < nrow; ++i) {
+        for (int  j = 0; j < ncol; ++j) {
+            const double d = data[j * nrow + i];
+            gene.update(i, d);
+            cell.update(j, d);
+        }
+    }
     return Rcpp::List::create(gene.as_list(), cell.as_list());
 }
