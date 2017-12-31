@@ -4,23 +4,6 @@
 
 #include "margin.h"
 
-// [[Rcpp::export]]
-Rcpp::NumericVector indptr( const std::string fname, const std::string group )
-{
-    H5::H5File h5( fname, H5F_ACC_RDONLY );
-    H5::DataSet dataset = h5.openDataSet( group + "/indptr" );
-    hsize_t n;
-
-    dataset.getSpace().getSimpleExtentDims( &n, NULL );
-    std::vector<int64_t> vec(n);
-    Rcpp::NumericVector result(n);
-
-    dataset.read( &vec[0], H5::PredType::NATIVE_LONG );
-    std::copy(vec.begin(), vec.end(), result.begin());
-
-    return result;
-}
-
 std::vector<hsize_t> get_dim( H5::H5File h5, const H5std_string group )
 {
     H5::DataSet dataset = h5.openDataSet( group );
@@ -56,7 +39,7 @@ void slab_read(
     dataset.read( &data[0], H5::PredType::NATIVE_LONG, memspace, dataspace );
 }
 
-Rcpp::List as_list(const int begin, const margin gene, const margin cell)
+Rcpp::List as_result(const int begin, const margin gene, const margin cell)
 {
     Rcpp::Environment env = Rcpp::new_env();
     char id[20];
@@ -71,60 +54,72 @@ Rcpp::List as_list(const int begin, const margin gene, const margin cell)
 // [[Rcpp::export]]
 Rcpp::List margins_rle_slab(
     const std::string fname, const std::string group,
-    const std::vector<double> indptr, const int begin, const int end
+    const int bufsize, const int begin, const int end
     )
 {
-    const H5std_string
-        indices_name( group + "/indices" ),
-        data_name( group + "/data" );
-    const hsize_t
-        rank = 1,
-        count[] = { indptr[end] - indptr[begin] },
-        start[] = { indptr[begin] } ;
-
     H5::H5File h5( fname, H5F_ACC_RDONLY );
+    const H5std_string
+        indptr_path( group + "/indptr" ), genes_path( group + "/genes" ),
+        indices_path( group + "/indices"), data_path( group + "/data" );
+    const hsize_t
+        nrow = get_dim( h5, genes_path )[0], ncol = end - begin;
+    hsize_t rank = 1, count, start;
+    std::vector<int64_t>
+        indptr( ncol + 1 ), indices( bufsize ), data( bufsize );
+    margin gene( nrow ), cell( ncol );
 
-    // indices + data
-    std::vector<int64_t> indices( count[0] ), data( count[0] );
-    slab_read( indices, h5, indices_name, rank, count, start );
-    slab_read( data, h5, data_name, rank, count,  start );
+    count = ncol + 1; start = begin;
+    slab_read( indptr, h5, indptr_path, rank, &count, &start );
 
-    // summarize
-    const std::vector<hsize_t> dim = get_dim( h5, group + "/genes" );
-    margin gene( dim[0] ), cell( end - begin );
-    int i, j = 0;
-    for (int k = 0; k < count[0]; ++k) {
-        i = indices[k];
-        if (indptr[begin] + k == indptr[begin + j + 1])
-            ++j;
-        gene.update(i, data[k]);
-        cell.update(j, data[k]);
+    count = bufsize; start = indptr[0];
+    const hsize_t nelt = indptr[indptr.size() - 1];
+    int i, j = -1, l = 0;
+    while ( nelt - start > 0 ) {
+        count = std::min( count, nelt - start);
+        slab_read( indices, h5, indices_path, rank, &count, &start );
+        slab_read( data, h5, data_path, rank, &count,  &start );
+        for (int k = 0; k < count; ++k) {
+            i = indices[k];
+            if (indptr[0] + l == indptr[j + 1])
+                ++j;
+            ++l;
+            gene.update(i, data[k]);
+            cell.update(j, data[k]);
+        }
+
+        start += count;
     }
 
-    return as_list( begin, gene, cell );
+    return as_result( begin, gene, cell );
 }
 
 // [[Rcpp::export]]
 Rcpp::List margins_dense_slab(
     const std::string fname, const std::string group,
-    const int nrow, const int begin, const int end
+    const int bufsize, const int begin, const int end
     )
 {
-    const int ncol = end - begin;
     H5::H5File h5( fname, H5F_ACC_RDONLY );
     // transposed!
-    hsize_t rank = 2, count[] = { ncol, nrow }, start[] = { begin, 0 };
-    std::vector<int64_t> data( nrow * ncol );
-    slab_read(data, h5, group, rank, count, start);
+    const hsize_t nrow = get_dim( h5, group )[1], ncol = end - begin;
+    hsize_t rank = 2, count[] = { bufsize, nrow }, start[] = { begin, 0 };
+    std::vector<int64_t> data( bufsize * nrow );
+    margin gene( nrow ), cell( ncol );
 
-    margin gene( nrow ), cell( end - begin );
-    for (int i = 0; i < nrow; ++i) {
-        for (int  j = 0; j < ncol; ++j) {
-            const double d = data[j * nrow + i];
-            gene.update(i, d);
-            cell.update(j, d);
+    int l = 0;
+    while ( end - start[0] > 0 ) {
+        count[0] = std::min( count[0], end - start[0] );
+        slab_read( data, h5, group, rank, count, start );
+        for (int  j = 0; j < count[0]; ++j) {
+            for (int i = 0; i < nrow; ++i) {
+                const double d = data[j * nrow + i];
+                gene.update(i, d);
+                cell.update(l + j, d);
+            }
         }
+        start[0] += count[0];
+        l += count[0];
     }
-
-    return as_list( begin, gene, cell );
+    
+    return as_result( begin, gene, cell );
 }

@@ -5,21 +5,21 @@
 \alias{margins_dense}
 \title{Calculate row and column counts, sums, and sums-of-squares}
 \usage{
-margins_rle(fname, group, bufsize = 1e+07, n = Inf)
+margins_rle(fname, group, ncol = Inf, bufsize = 10000000L)
 
-margins_dense(fname, group, bufsize = 6000, n = Inf)
+margins_dense(fname, group, ncol = Inf, bufsize = 6000)
 }
 \arguments{
 \item{fname}{character(1) HDF5 file name to 10xGenomics-format file.}
 
 \item{group}{character(1) group name (e.g., `mm10`) containing counts.}
 
+\item{ncol}{integer(1) number of columns to process; default: all.}
+
 \item{bufsize}{integer(1) approximate maximum number of non-zero
 counts (for `margins_rle()`) or columns (for `margins_dense()`)
 to read per iteration. The default is reasonably memory- and
 time-efficient.}
-
-\item{n}{numeric(1) number of blocks to process; default: all.}
 }
 \value{
 a `list()` with `row` and `column` elements. Each element

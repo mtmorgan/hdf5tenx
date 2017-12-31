@@ -1,49 +1,31 @@
 #' @useDynLib hdf5tenx, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 
-.iterator_rle <- function(fname, group, bufsize = 1e7, n = Inf) {
-    indptr <- indptr(fname, group)
-    indgrp <- floor(indptr / bufsize)
-    offset <- c(match(unique(indgrp), indgrp), length(indptr))
-    n <- min(n, length(offset) - 1L)
+.iterator <- function(fname, group, ncol, bufsize) {
+    offset <- floor(seq(0, ncol, length.out = bpnworkers(bpparam()) + 1L))
+
+    n <- min(ncol, length(offset) - 1L)
     i <- 0L
     function() {
         if (i == n)
             return(NULL)
         i <<- i + 1L
         list(
-            fname = fname, group = group,
-            indptr = indptr, begin = offset[i], end = offset[i + 1]
+            fname = fname, group = group, bufsize = bufsize,
+            start = offset[i], end = offset[i + 1]
         )
     }
 }
 
 .fun_rle <- function(iter, ...) {
     margins_rle_slab(
-        iter$fname, iter$group, iter$indptr, iter$begin - 1L, iter$end - 1L
+        iter$fname, iter$group, iter$bufsize, iter$start, iter$end
     )
-}
-
-.iterator_dense <- function(fname, group, bufsize = 6000, n = Inf) {
-    dim <- margins_dim(fname, group)
-    colgrp <- ceiling(seq_len(dim[[2]]) / bufsize)
-    offset <- c(match(unique(colgrp), colgrp), length(colgrp) + 1L)
-    n <- min(n, length(offset) - 1L)
-    i <- 0L
-    function() {
-        if (i == n)
-            return(NULL)
-        i <<- i + 1L
-        list(
-            fname = fname, group = group,
-            nrow = dim[1], begin = offset[i], end = offset[i + 1]
-        )
-    }
 }
 
 .fun_dense <- function(iter, ...) {
     margins_dense_slab(
-        iter$fname, iter$group, iter$nrow, iter$begin - 1L, iter$end - 1L
+        iter$fname, iter$group, iter$bufsize, iter$start, iter$end
     )
 }
 
@@ -84,7 +66,7 @@
 #'     to read per iteration. The default is reasonably memory- and
 #'     time-efficient.
 #'
-#' @param n numeric(1) number of blocks to process; default: all.
+#' @param ncol integer(1) number of columns to process; default: all.
 #'
 #' @return a `list()` with `row` and `column` elements. Each element
 #'     is itself a list with `n`, `sum`, and `sumsq` (sum-of-squares)
@@ -93,17 +75,19 @@
 #' @importFrom BiocParallel bpiterate
 #'
 #' @export
-margins_rle <- function(fname, group, bufsize = 1e7, n = Inf) {
+margins_rle <- function(fname, group, ncol = Inf, bufsize = 10000000L) {
+    bufsize <- as.integer(bufsize)
     stopifnot(
         is.character(fname), length(fname) == 1L, !is.na(fname),
         file.exists(fname),
         is.character(group), length(group) == 1L, !is.na(group),
         is.numeric(bufsize), length(bufsize) == 1L, bufsize > 0,
-        is.numeric(n), length(bufsize) == 1L, n > 0
+        is.numeric(ncol), length(ncol) == 1L, ncol > 0
     )
 
+    ncol <- min(margins_dim(fname, paste0(group, "/barcodes")), ncol)
     res <- bpiterate(
-        .iterator_rle(fname, group, bufsize, n), .fun_rle, REDUCE=.reduce
+        .iterator(fname, group, ncol, bufsize), .fun_rle, REDUCE=.reduce
     )
 
     .final(res)
@@ -115,17 +99,19 @@ margins_rle <- function(fname, group, bufsize = 1e7, n = Inf) {
 #'     rectangular (dense matrix) HDF5 files.
 #'
 #' @export
-margins_dense <- function(fname, group, bufsize = 6000, n = Inf) {
+margins_dense <- function(fname, group, ncol = Inf, bufsize = 6000) {
+    bufsize <- as.integer(bufsize)
     stopifnot(
         is.character(fname), length(fname) == 1L, !is.na(fname),
         file.exists(fname),
         is.character(group), length(group) == 1L, !is.na(group),
         is.numeric(bufsize), length(bufsize) == 1L, bufsize > 0,
-        is.numeric(n), length(bufsize) == 1L, n > 0
+        is.numeric(ncol), length(ncol) == 1L, ncol > 0
     )
 
+    ncol <- min(margins_dim(fname, group)[2], ncol)
     res <- bpiterate(
-        .iterator_dense(fname, group, bufsize, n), .fun_dense, REDUCE=.reduce
+        .iterator(fname, group, ncol, bufsize), .fun_dense, REDUCE=.reduce
     )
 
     .final(res)
