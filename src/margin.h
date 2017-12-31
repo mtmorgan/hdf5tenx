@@ -11,7 +11,7 @@ public:
     std::vector<int> n;
     std::vector<double> sum, sumsq;
 
-  margin( const hsize_t n ) : n(n), sum(n), sumsq(n) {};
+  margin( const int n ) : n(n), sum(n), sumsq(n) {};
 
     inline void update( const int i, const double d ) {
         if (d == 0)
