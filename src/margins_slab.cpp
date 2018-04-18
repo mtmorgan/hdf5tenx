@@ -1,6 +1,6 @@
 #include <string>
 #include <Rcpp.h>
-#include "c++/H5Cpp.h"
+#include "H5Cpp.h"
 
 #include "margin.h"
 
